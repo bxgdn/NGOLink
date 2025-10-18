@@ -1,0 +1,125 @@
+.profile-page {
+  animation: fadeIn 0.3s ease;
+}
+
+.profile-header {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.profile-avatar-section {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.profile-avatar-large {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--gray-200);
+}
+
+.profile-header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.profile-email,
+.verification-status {
+  color: var(--gray-600);
+  font-size: 0.9375rem;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-box {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stat-box h3 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--medium-green);
+  margin-bottom: 0.5rem;
+}
+
+.stat-box p {
+  color: var(--gray-600);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.profile-content {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.profile-section {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.profile-section:last-child {
+  border-bottom: none;
+}
+
+.profile-section h2 {
+  font-size: 1.125rem;
+  margin-bottom: 1rem;
+  color: var(--dark-green);
+}
+
+.profile-section p {
+  color: var(--gray-700);
+  line-height: 1.6;
+}
+
+.profile-section a {
+  color: var(--medium-green);
+  text-decoration: underline;
+}
+
+.profile-section textarea,
+.profile-section input[type="text"],
+.profile-section input[type="url"] {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.profile-section input[type="range"] {
+  width: 100%;
+  margin: 1rem 0;
+}
+
+@media (max-width: 768px) {
+  .profile-header {
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+
+  .profile-avatar-section {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+

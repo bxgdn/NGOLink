@@ -1,0 +1,89 @@
+.task-manager {
+  animation: fadeIn 0.3s ease;
+}
+
+.task-section {
+  margin-bottom: 3rem;
+}
+
+.task-section h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: var(--dark-green);
+}
+
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.review-card {
+  border: 2px solid var(--yellow);
+  background: rgba(238, 232, 44, 0.05);
+}
+
+.completed-card {
+  opacity: 0.8;
+}
+
+.task-volunteer {
+  color: var(--gray-600);
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.task-meta {
+  color: var(--gray-600);
+  font-size: 0.875rem;
+}
+
+.submission-section {
+  background: var(--gray-100);
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+.submission-section h4 {
+  font-size: 0.9375rem;
+  margin-bottom: 0.75rem;
+  color: var(--dark-green);
+}
+
+.submission-text {
+  color: var(--gray-700);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.review-form {
+  margin-top: 1rem;
+}
+
+.review-form textarea {
+  margin-bottom: 0.75rem;
+}
+
+.review-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.empty-message {
+  text-align: center;
+  color: var(--gray-600);
+  padding: 2rem;
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 768px) {
+  .review-actions {
+    flex-direction: column;
+  }
+
+  .review-actions .btn {
+    width: 100%;
+  }
+}
+
