@@ -9,6 +9,12 @@ import '../../styles/Dashboard.css';
 const VolunteerDashboard = () => {
   const { currentUser, user } = useAuth();
   
+  // Query user data directly for real-time stats updates
+  const userData = useQuery(
+    api.users.getUser,
+    currentUser?.userId ? { userId: currentUser.userId } : 'skip'
+  );
+
   const matches = useQuery(
     api.matches.getMatchesForVolunteer,
     currentUser?.userId ? { userId: currentUser.userId } : 'skip'
@@ -26,12 +32,15 @@ const VolunteerDashboard = () => {
 
   const activeTasks = tasks?.filter(t => t.status === 'claimed' || t.status === 'in_progress') || [];
   const pendingReview = tasks?.filter(t => t.status === 'submitted') || [];
+  
+  // Use userData for stats, fallback to user from AuthContext
+  const displayUser = userData || user;
 
   return (
     <div className="dashboard">
       <div className="welcome-banner">
         <div>
-          <h1>Welcome back, {user?.name}! 👋</h1>
+          <h1>Welcome back, {displayUser?.name}! 👋</h1>
           <p>Ready to make a difference today?</p>
         </div>
         <Link to="/volunteer/swipe" className="btn btn-primary">
@@ -46,7 +55,7 @@ const VolunteerDashboard = () => {
             <CheckSquare size={24} />
           </div>
           <div className="stat-content">
-            <h3>{user?.tasksCompleted || 0}</h3>
+            <h3>{displayUser?.tasksCompleted || 0}</h3>
             <p>Tasks Completed</p>
           </div>
         </div>
@@ -56,7 +65,7 @@ const VolunteerDashboard = () => {
             <Clock size={24} />
           </div>
           <div className="stat-content">
-            <h3>{user?.totalHoursVolunteered || 0}h</h3>
+            <h3>{displayUser?.totalHoursVolunteered || 0}h</h3>
             <p>Hours Volunteered</p>
           </div>
         </div>

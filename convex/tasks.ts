@@ -195,6 +195,14 @@ export const reviewTask = mutation({
         });
       }
 
+      // Update NGO stats
+      const ngo = await ctx.db.get(task.ngoId);
+      if (ngo) {
+        await ctx.db.patch(task.ngoId, {
+          totalHoursReceived: ngo.totalHoursReceived + (task.estimatedHours || 0),
+        });
+      }
+
       // Create notification
       await ctx.db.insert("notifications", {
         userId: task.assignedTo,

@@ -21,7 +21,7 @@ export const createNGO = mutation({
       logo: args.logo,
       coverImage: args.coverImage,
       website: args.website,
-      isVerified: false,
+      isVerified: true, // Auto-verify all NGOs
       totalVolunteers: 0,
       totalHoursReceived: 0,
       createdAt: Date.now(),
@@ -136,6 +136,18 @@ export const updateNGOStats = mutation({
       totalHoursReceived: ngo.totalHoursReceived + (args.hoursToAdd || 0),
       totalVolunteers: ngo.totalVolunteers + (args.volunteersToAdd || 0),
     });
+  },
+});
+
+// Update NGO logo
+export const updateNGOLogo = mutation({
+  args: {
+    ngoId: v.id("ngos"),
+    logo: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.ngoId, { logo: args.logo });
+    return args.ngoId;
   },
 });
 

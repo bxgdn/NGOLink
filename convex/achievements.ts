@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 
 // Create achievement templates (admin function)
@@ -47,7 +47,7 @@ export const getUserAchievements = query({
   },
 });
 
-// Check and award achievements
+// Check and award achievements (can be called internally or externally)
 export const checkAndAwardAchievements = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
@@ -118,6 +118,51 @@ export const checkAndAwardAchievements = mutation({
     }
 
     return newlyEarned;
+  },
+});
+
+// Award custom medal from NGO
+export const awardCustomMedal = mutation({
+  args: {
+    userId: v.id("users"),
+    ngoId: v.id("ngos"),
+    name: v.string(),
+    description: v.string(),
+    icon: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Create a custom achievement entry
+    const achievementId = await ctx.db.insert("achievements", {
+      name: args.name,
+      description: args.description,
+      type: "medal",
+      tier: "gold", // NGO custom medals are always gold tier
+      icon: args.icon,
+      category: "NGO Special Award",
+      criteriaType: "custom",
+      criteriaValue: 0,
+    });
+
+    // Award it to the user immediately
+    const userAchievementId = await ctx.db.insert("userAchievements", {
+      userId: args.userId,
+      achievementId,
+      earnedAt: Date.now(),
+    });
+
+    // Create notification
+    const ngo = await ctx.db.get(args.ngoId);
+    await ctx.db.insert("notifications", {
+      userId: args.userId,
+      type: "achievement_unlocked",
+      title: "Special Award Received!",
+      message: `${ngo?.organizationName} has awarded you: ${args.name}`,
+      isRead: false,
+      relatedId: userAchievementId,
+      createdAt: Date.now(),
+    });
+
+    return userAchievementId;
   },
 });
 

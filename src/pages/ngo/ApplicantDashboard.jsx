@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
-import { Check, X, ExternalLink } from 'lucide-react';
+import { Check, X, ExternalLink, Users } from 'lucide-react';
 import '../../styles/ApplicantDashboard.css';
 
 const ApplicantDashboard = () => {

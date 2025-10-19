@@ -43,7 +43,7 @@ const SignupPage = () => {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-card">
-          <h1 className="auth-logo">🌱 VolunteerConnect</h1>
+          <h1 className="auth-logo">🌱 NGOLink</h1>
           <h2 className="auth-title">Create Account</h2>
           <p className="auth-subtitle">Join our community and start making an impact</p>
 

@@ -21,8 +21,9 @@ export const swipeOpportunity = mutation({
       createdAt: Date.now(),
     });
 
-    // If right swipe or super like, create a pending match
-    if (args.swipeType === "right" || args.swipeType === "super") {
+    // Only right swipe creates a pending match (immediate application)
+    // Super like saves for later without creating a match
+    if (args.swipeType === "right") {
       const matchId = await ctx.db.insert("matches", {
         userId: args.userId,
         opportunityId: args.opportunityId,
@@ -37,8 +38,8 @@ export const swipeOpportunity = mutation({
         await ctx.db.insert("notifications", {
           userId: ngo.userId,
           type: "new_applicant",
-          title: "New Volunteer Interest!",
-          message: `A volunteer has shown interest in your opportunity: ${opportunity.title}`,
+          title: "New Volunteer Application!",
+          message: `A volunteer has applied to your opportunity: ${opportunity.title}`,
           isRead: false,
           relatedId: matchId,
           createdAt: Date.now(),
@@ -141,6 +142,30 @@ export const getMatchesForVolunteer = query({
   },
 });
 
+// Get all matches for volunteer (including pending and rejected)
+export const getAllMatchesForVolunteer = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const matches = await ctx.db
+      .query("matches")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .collect();
+
+    return await Promise.all(
+      matches.map(async (match) => {
+        const ngo = await ctx.db.get(match.ngoId);
+        const opportunity = await ctx.db.get(match.opportunityId);
+        return {
+          ...match,
+          ngo,
+          opportunity,
+        };
+      })
+    );
+  },
+});
+
 // Get match details
 export const getMatch = query({
   args: { matchId: v.id("matches") },
@@ -176,6 +201,127 @@ export const updateMatchStatus = mutation({
   handler: async (ctx, args) => {
     await ctx.db.patch(args.matchId, { status: args.status });
     return args.matchId;
+  },
+});
+
+// Get saved opportunities for user (super likes)
+export const getSavedOpportunitiesForUser = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const swipes = await ctx.db
+      .query("swipes")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .filter((q) => q.eq(q.field("swipeType"), "super"))
+      .collect();
+
+    // Filter out swipes that have already been applied to (have a match)
+    const swipesWithOpportunities = await Promise.all(
+      swipes.map(async (swipe) => {
+        // Check if there's already a match for this opportunity
+        const existingMatch = await ctx.db
+          .query("matches")
+          .withIndex("by_user", (q) => q.eq("userId", args.userId))
+          .filter((q) => q.eq(q.field("opportunityId"), swipe.opportunityId))
+          .first();
+
+        if (existingMatch) {
+          return null; // Already applied, don't show in saved
+        }
+
+        const opportunity = await ctx.db.get(swipe.opportunityId);
+        if (!opportunity || !opportunity.isActive) return null;
+
+        const ngo = await ctx.db.get(opportunity.ngoId);
+
+        return {
+          ...swipe,
+          opportunity: {
+            ...opportunity,
+            ngo: ngo ? {
+              name: ngo.organizationName,
+              logo: ngo.logo,
+            } : null,
+          },
+        };
+      })
+    );
+
+    return swipesWithOpportunities.filter(swipe => swipe !== null);
+  },
+});
+
+// Remove saved opportunity
+export const removeSavedOpportunity = mutation({
+  args: { swipeId: v.id("swipes") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.swipeId);
+  },
+});
+
+// Get matches for user (both volunteer and NGO) with last message info
+export const getMatchesForUser = query({
+  args: { 
+    userId: v.optional(v.id("users")),
+    ngoId: v.optional(v.id("ngos")),
+  },
+  handler: async (ctx, args) => {
+    let matches;
+    
+    if (args.userId) {
+      // Get matches for volunteer
+      matches = await ctx.db
+        .query("matches")
+        .withIndex("by_user", (q) => q.eq("userId", args.userId))
+        .filter((q) => 
+          q.or(
+            q.eq(q.field("status"), "accepted"),
+            q.eq(q.field("status"), "active")
+          )
+        )
+        .collect();
+    } else if (args.ngoId) {
+      // Get matches for NGO
+      matches = await ctx.db
+        .query("matches")
+        .withIndex("by_ngo", (q) => q.eq("ngoId", args.ngoId))
+        .filter((q) => 
+          q.or(
+            q.eq(q.field("status"), "accepted"),
+            q.eq(q.field("status"), "active")
+          )
+        )
+        .collect();
+    } else {
+      return [];
+    }
+
+    // Get last message for each match
+    const matchesWithMessages = await Promise.all(
+      matches.map(async (match) => {
+        const ngo = await ctx.db.get(match.ngoId);
+        const volunteer = await ctx.db.get(match.userId);
+        const opportunity = await ctx.db.get(match.opportunityId);
+        
+        // Get last message for this match
+        const lastMessage = await ctx.db
+          .query("messages")
+          .withIndex("by_match", (q) => q.eq("matchId", match._id))
+          .order("desc")
+          .first();
+
+        return {
+          ...match,
+          ngo,
+          volunteer,
+          opportunity,
+          lastMessage: lastMessage?.content || null,
+          lastMessageTime: lastMessage?.createdAt || match.createdAt,
+        };
+      })
+    );
+
+    // Sort by last message time
+    return matchesWithMessages.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
   },
 });
 

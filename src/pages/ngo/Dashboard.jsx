@@ -36,7 +36,7 @@ const NGODashboard = () => {
       <div className="welcome-banner">
         <div>
           <h1>Welcome, {ngo?.organizationName}! 👋</h1>
-          <p>{ngo?.isVerified ? '✅ Verified Organization' : '⏳ Pending Verification'}</p>
+          <p>✅ Verified Organization</p>
         </div>
         <Link to="/ngo/opportunities" className="btn btn-primary">
           <Briefcase size={18} />
@@ -67,11 +67,11 @@ const NGODashboard = () => {
 
         <div className="stat-card">
           <div className="stat-icon" style={{ background: '#EEE82C' }}>
-            <CheckSquare size={24} />
+            <Users size={24} />
           </div>
           <div className="stat-content">
-            <h3>{stats?.completedTasks || 0}</h3>
-            <p>Completed Tasks</p>
+            <h3>{pendingMatches?.length || 0}</h3>
+            <p>Pending Applications</p>
           </div>
         </div>
 
@@ -81,7 +81,7 @@ const NGODashboard = () => {
           </div>
           <div className="stat-content">
             <h3>{stats?.totalHours || 0}h</h3>
-            <p>Volunteer Hours</p>
+            <p>Volunteer Hours Received</p>
           </div>
         </div>
       </div>
@@ -164,13 +164,6 @@ const NGODashboard = () => {
               </Link>
             </div>
           </div>
-
-          {!ngo?.isVerified && (
-            <div className="section-card warning-card">
-              <h3>⏳ Verification Pending</h3>
-              <p>Your organization is under review. You'll be able to post opportunities once verified.</p>
-            </div>
-          )}
         </div>
       </div>
     </div>

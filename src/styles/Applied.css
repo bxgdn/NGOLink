@@ -1,0 +1,163 @@
+.applied-page {
+  animation: fadeIn 0.3s ease;
+}
+
+.applications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.application-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s;
+  border-left: 4px solid var(--gray-300);
+}
+
+.application-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateX(4px);
+}
+
+.application-card.status-pending {
+  border-left-color: #f59e0b;
+}
+
+.application-card.status-accepted {
+  border-left-color: var(--medium-green);
+}
+
+.application-card.status-rejected {
+  border-left-color: #dc3545;
+}
+
+.application-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.app-org-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.app-org-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 2px solid var(--gray-200);
+  flex-shrink: 0;
+}
+
+.app-org-info h3 {
+  font-size: 1.125rem;
+  margin-bottom: 0.25rem;
+  color: var(--dark-green);
+}
+
+.app-org-name {
+  color: var(--gray-600);
+  font-size: 0.875rem;
+}
+
+.status-badge-app {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-badge-app.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge-app.status-accepted {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge-app.status-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.app-description {
+  color: var(--gray-700);
+  line-height: 1.6;
+  font-size: 0.9375rem;
+  margin-bottom: 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.app-meta {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+.app-meta .meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--gray-600);
+  font-size: 0.875rem;
+}
+
+.app-meta .meta-item svg {
+  color: var(--medium-green);
+}
+
+.app-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+.app-date {
+  font-size: 0.8125rem;
+  color: var(--gray-500);
+}
+
+.accepted-date {
+  color: var(--medium-green);
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .application-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .status-badge-app {
+    justify-content: center;
+  }
+
+  .app-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+}
+

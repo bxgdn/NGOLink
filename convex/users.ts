@@ -60,6 +60,18 @@ export const updateVolunteerProfile = mutation({
   },
 });
 
+// Update profile picture
+export const updateProfilePicture = mutation({
+  args: {
+    userId: v.id("users"),
+    profilePicture: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.userId, { profilePicture: args.profilePicture });
+    return args.userId;
+  },
+});
+
 // Get user by ID
 export const getUser = query({
   args: { userId: v.id("users") },

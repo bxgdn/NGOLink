@@ -5,6 +5,17 @@ import { api } from '../../../convex/_generated/api';
 import { Heart, X, Star, MapPin, Clock, Filter } from 'lucide-react';
 import '../../styles/SwipeDeck.css';
 
+const CAUSES = [
+  'Environment', 'Animal Welfare', 'Education', 'Human Rights',
+  'Healthcare', 'Poverty Alleviation', 'Children & Youth', 'Arts & Culture'
+];
+
+const SKILLS = [
+  'Web Development', 'Graphic Design', 'Content Writing', 'Video Editing',
+  'Social Media', 'Photography', 'Data Analysis', 'Marketing', 'Translation',
+  'Public Speaking', 'Event Management', 'Mentoring', 'Teaching'
+];
+
 const SwipeDeck = () => {
   const { currentUser } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -24,22 +35,49 @@ const SwipeDeck = () => {
 
   const currentOpportunity = opportunities?.[currentIndex];
 
+  const toggleFilter = (filterType, value) => {
+    setFilters(prev => {
+      const currentFilters = prev[filterType];
+      const newFilters = currentFilters.includes(value)
+        ? currentFilters.filter(v => v !== value)
+        : [...currentFilters, value];
+      return { ...prev, [filterType]: newFilters };
+    });
+    setCurrentIndex(0); // Reset to first card when filters change
+  };
+
+  const clearFilters = () => {
+    setFilters({ causeFilter: [], skillFilter: [] });
+    setCurrentIndex(0);
+  };
+
   const handleSwipe = async (direction) => {
     if (!currentOpportunity) return;
 
-    let swipeType = direction === 'right' ? 'right' : 'left';
-    
-    if (direction === 'super' && superLikesLeft > 0) {
-      swipeType = 'super';
-      setSuperLikesLeft(prev => prev - 1);
-    }
-
     try {
-      await swipeOpportunity({
-        userId: currentUser.userId,
-        opportunityId: currentOpportunity._id,
-        swipeType,
-      });
+      if (direction === 'right') {
+        // Heart button - Apply immediately
+        await swipeOpportunity({
+          userId: currentUser.userId,
+          opportunityId: currentOpportunity._id,
+          swipeType: 'right',
+        });
+      } else if (direction === 'super' && superLikesLeft > 0) {
+        // Star button - Save for later (doesn't create match)
+        await swipeOpportunity({
+          userId: currentUser.userId,
+          opportunityId: currentOpportunity._id,
+          swipeType: 'super',
+        });
+        setSuperLikesLeft(prev => prev - 1);
+      } else if (direction === 'left') {
+        // Skip
+        await swipeOpportunity({
+          userId: currentUser.userId,
+          opportunityId: currentOpportunity._id,
+          swipeType: 'left',
+        });
+      }
 
       // Move to next card
       setCurrentIndex(prev => prev + 1);
@@ -105,13 +143,55 @@ const SwipeDeck = () => {
             <span>{superLikesLeft} Super Likes</span>
           </div>
           <button 
-            className="filter-btn"
+            className={`filter-btn ${showFilters ? 'active' : ''}`}
             onClick={() => setShowFilters(!showFilters)}
           >
             <Filter size={20} />
+            {(filters.causeFilter.length > 0 || filters.skillFilter.length > 0) && (
+              <span className="filter-badge">{filters.causeFilter.length + filters.skillFilter.length}</span>
+            )}
           </button>
         </div>
       </div>
+
+      {showFilters && (
+        <div className="filter-panel">
+          <div className="filter-section">
+            <div className="filter-header">
+              <h3>Filter by Cause</h3>
+              {filters.causeFilter.length > 0 && (
+                <button className="clear-btn" onClick={clearFilters}>Clear All</button>
+              )}
+            </div>
+            <div className="filter-options">
+              {CAUSES.map(cause => (
+                <button
+                  key={cause}
+                  className={`filter-chip ${filters.causeFilter.includes(cause) ? 'selected' : ''}`}
+                  onClick={() => toggleFilter('causeFilter', cause)}
+                >
+                  {cause}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div className="filter-section">
+            <h3>Filter by Skills</h3>
+            <div className="filter-options">
+              {SKILLS.map(skill => (
+                <button
+                  key={skill}
+                  className={`filter-chip ${filters.skillFilter.includes(skill) ? 'selected' : ''}`}
+                  onClick={() => toggleFilter('skillFilter', skill)}
+                >
+                  {skill}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="card-container">
         {/* Show next card in background */}
@@ -119,7 +199,7 @@ const SwipeDeck = () => {
           <div className="opportunity-card background-card">
             <div className="card-image">
               <img 
-                src={opportunities[currentIndex + 1].ngo?.coverImage || 'https://via.placeholder.com/600x300'}
+                src={opportunities[currentIndex + 1].coverImage || 'https://via.placeholder.com/600x300?text=Volunteer+Opportunity'}
                 alt={opportunities[currentIndex + 1].title}
               />
             </div>
@@ -130,7 +210,7 @@ const SwipeDeck = () => {
         <div className="opportunity-card active-card">
           <div className="card-image">
             <img 
-              src={currentOpportunity.ngo?.coverImage || 'https://via.placeholder.com/600x300'}
+              src={currentOpportunity.coverImage || 'https://via.placeholder.com/600x300?text=Volunteer+Opportunity'}
               alt={currentOpportunity.title}
             />
             <div className="card-badge-container">
@@ -205,9 +285,9 @@ const SwipeDeck = () => {
 
       <div className="swipe-instructions">
         <p>
-          <Heart size={16} /> Swipe right to express interest •
-          <Star size={16} fill="#EEE82C" /> Super like to stand out •
-          <X size={16} /> Skip to pass
+          <Heart size={16} /> Apply now •
+          <Star size={16} fill="#EEE82C" /> Save for later •
+          <X size={16} /> Skip
         </p>
       </div>
     </div>

@@ -55,10 +55,25 @@ export const getMessagesForMatch = query({
     return await Promise.all(
       messages.map(async (msg) => {
         const sender = await ctx.db.get(msg.senderId);
+        let senderPicture = sender?.profilePicture;
+        let senderName = sender?.name || "Unknown";
+
+        // If sender is NGO type, fetch their logo from ngos table
+        if (msg.senderType === "ngo") {
+          const ngo = await ctx.db
+            .query("ngos")
+            .withIndex("by_userId", (q) => q.eq("userId", msg.senderId))
+            .first();
+          if (ngo) {
+            senderPicture = ngo.logo;
+            senderName = ngo.organizationName;
+          }
+        }
+
         return {
           ...msg,
-          senderName: sender?.name || "Unknown",
-          senderPicture: sender?.profilePicture,
+          senderName,
+          senderPicture,
         };
       })
     );

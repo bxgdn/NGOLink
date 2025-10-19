@@ -8,7 +8,7 @@ const LandingPage = () => {
     <div className="landing-page">
       <nav className="landing-nav">
         <div className="container">
-          <h1 className="logo">🌱 VolunteerConnect</h1>
+          <h1 className="logo">🌱 NGOLink</h1>
           <div className="nav-links">
             <Link to="/login" className="btn btn-outline">Login</Link>
             <Link to="/signup" className="btn btn-primary">Sign Up</Link>
@@ -92,7 +92,7 @@ const LandingPage = () => {
 
       <footer className="footer">
         <div className="container">
-          <p>&copy; 2024 VolunteerConnect. All rights reserved.</p>
+          <p>&copy; 2024 NGOLink. All rights reserved.</p>
         </div>
       </footer>
     </div>

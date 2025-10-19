@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
-import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Filter, Search, Camera, X } from 'lucide-react';
 import '../../styles/OpportunityManager.css';
 
 const CAUSES = [
@@ -19,6 +19,13 @@ const OpportunityManager = () => {
   const { currentUser } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState({
+    status: 'all', // all, active, inactive
+    cause: [],
+    skill: [],
+  });
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -27,7 +34,11 @@ const OpportunityManager = () => {
     location: '',
     locationType: 'remote',
     cause: [],
+    coverImage: '',
   });
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef(null);
 
   const ngo = useQuery(
     api.ngos.getNGOByUserId,
@@ -42,6 +53,51 @@ const OpportunityManager = () => {
   const createOpportunity = useMutation(api.opportunities.createOpportunity);
   const updateOpportunity = useMutation(api.opportunities.updateOpportunity);
   const deleteOpportunity = useMutation(api.opportunities.deleteOpportunity);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (1MB limit)
+    if (file.size > 1024 * 1024) {
+      setUploadError('Image must be less than 1MB');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError('File must be an image');
+      return;
+    }
+
+    setUploadingImage(true);
+    setUploadError('');
+
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, coverImage: reader.result });
+        setUploadingImage(false);
+      };
+      reader.onerror = () => {
+        setUploadError('Failed to read image');
+        setUploadingImage(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setUploadError('Failed to upload image');
+      setUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData({ ...formData, coverImage: '' });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -70,7 +126,17 @@ const OpportunityManager = () => {
         location: '',
         locationType: 'remote',
         cause: [],
+        coverImage: '',
       });
+      
+      // Clear all filters and search to show the newly created opportunity
+      setFilters({
+        status: 'all',
+        cause: [],
+        skill: [],
+      });
+      setSearchQuery('');
+      setShowFilters(false);
     } catch (error) {
       console.error('Error saving opportunity:', error);
     }
@@ -79,13 +145,14 @@ const OpportunityManager = () => {
   const handleEdit = (opportunity) => {
     setEditingId(opportunity._id);
     setFormData({
-      title: opportunity.title,
-      description: opportunity.description,
-      requiredSkills: opportunity.requiredSkills,
-      timeCommitment: opportunity.timeCommitment,
-      location: opportunity.location,
-      locationType: opportunity.locationType,
-      cause: opportunity.cause,
+      title: opportunity.title || '',
+      description: opportunity.description || '',
+      requiredSkills: opportunity.requiredSkills || [],
+      timeCommitment: opportunity.timeCommitment || '',
+      location: opportunity.location || '',
+      locationType: opportunity.locationType || 'remote',
+      cause: opportunity.cause || [],
+      coverImage: opportunity.coverImage || '',
     });
     setShowForm(true);
   };
@@ -109,23 +176,81 @@ const OpportunityManager = () => {
     });
   };
 
-  if (!ngo?.isVerified) {
-    return (
-      <div className="opportunity-manager">
-        <div className="verification-message">
-          <h2>⏳ Organization Under Review</h2>
-          <p>Your organization needs to be verified before you can create opportunities. We'll notify you once the review is complete.</p>
-        </div>
-      </div>
-    );
-  }
+  const toggleFilterArray = (filterType, value) => {
+    setFilters(prev => {
+      const current = prev[filterType];
+      const newValue = current.includes(value)
+        ? current.filter(v => v !== value)
+        : [...current, value];
+      return { ...prev, [filterType]: newValue };
+    });
+  };
+
+  const clearFilters = () => {
+    setFilters({ status: 'all', cause: [], skill: [] });
+    setSearchQuery('');
+  };
+
+  // Filter opportunities based on search and filters
+  const filteredOpportunities = useMemo(() => {
+    if (!opportunities) return [];
+    
+    let filtered = opportunities;
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(opp => 
+        opp.title.toLowerCase().includes(query) ||
+        opp.description.toLowerCase().includes(query)
+      );
+    }
+
+    // Status filter
+    if (filters.status !== 'all') {
+      filtered = filtered.filter(opp => 
+        filters.status === 'active' ? opp.isActive : !opp.isActive
+      );
+    }
+
+    // Cause filter
+    if (filters.cause.length > 0) {
+      filtered = filtered.filter(opp =>
+        opp.cause.some(c => filters.cause.includes(c))
+      );
+    }
+
+    // Skill filter
+    if (filters.skill.length > 0) {
+      filtered = filtered.filter(opp =>
+        opp.requiredSkills.some(s => filters.skill.includes(s))
+      );
+    }
+
+    return filtered;
+  }, [opportunities, searchQuery, filters]);
+
+  const hasActiveFilters = filters.status !== 'all' || filters.cause.length > 0 || filters.skill.length > 0 || searchQuery;
+
+  // Debug logging
+  React.useEffect(() => {
+    if (opportunities) {
+      console.log('Total opportunities from DB:', opportunities.length);
+      console.log('Filtered opportunities:', filteredOpportunities.length);
+      console.log('Current filters:', filters);
+      console.log('Search query:', searchQuery);
+    }
+  }, [opportunities, filteredOpportunities, filters, searchQuery]);
 
   return (
     <div className="opportunity-manager">
       <div className="page-header">
         <div>
           <h1>Opportunities</h1>
-          <p>Manage your volunteer opportunities</p>
+          <p>
+            Manage your volunteer opportunities 
+            {opportunities && ` (${filteredOpportunities.length} of ${opportunities.length} shown)`}
+          </p>
         </div>
         <button 
           className="btn btn-primary"
@@ -147,6 +272,83 @@ const OpportunityManager = () => {
           Create Opportunity
         </button>
       </div>
+
+      {/* Search and Filter Bar */}
+      <div className="search-filter-bar">
+        <div className="search-box">
+          <Search size={20} />
+          <input
+            type="text"
+            placeholder="Search opportunities..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        
+        <div className="filter-controls">
+          <select 
+            className="status-filter"
+            value={filters.status}
+            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active Only</option>
+            <option value="inactive">Inactive Only</option>
+          </select>
+
+          <button 
+            className={`filter-toggle-btn ${showFilters ? 'active' : ''}`}
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter size={18} />
+            Filters
+            {hasActiveFilters && <span className="filter-count">{
+              filters.cause.length + filters.skill.length
+            }</span>}
+          </button>
+
+          {hasActiveFilters && (
+            <button className="clear-filters-btn" onClick={clearFilters}>
+              Clear All
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="filter-panel-opportunities">
+          <div className="filter-section">
+            <h4>Filter by Cause</h4>
+            <div className="filter-chips">
+              {CAUSES.map(cause => (
+                <button
+                  key={cause}
+                  className={`filter-chip ${filters.cause.includes(cause) ? 'selected' : ''}`}
+                  onClick={() => toggleFilterArray('cause', cause)}
+                >
+                  {cause}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="filter-section">
+            <h4>Filter by Skills</h4>
+            <div className="filter-chips">
+              {SKILLS.map(skill => (
+                <button
+                  key={skill}
+                  className={`filter-chip ${filters.skill.includes(skill) ? 'selected' : ''}`}
+                  onClick={() => toggleFilterArray('skill', skill)}
+                >
+                  {skill}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showForm && (
         <div className="modal-overlay" onClick={() => setShowForm(false)}>
@@ -250,6 +452,50 @@ const OpportunityManager = () => {
                 />
               </div>
 
+              <div className="form-group">
+                <label>Cover Image (optional)</label>
+                <p className="form-hint">Upload an image for this opportunity (max 1MB)</p>
+                
+                {formData.coverImage ? (
+                  <div className="image-preview-container">
+                    <img 
+                      src={formData.coverImage} 
+                      alt="Cover preview" 
+                      className="image-preview"
+                    />
+                    <button 
+                      type="button"
+                      className="remove-image-btn"
+                      onClick={handleRemoveImage}
+                    >
+                      <X size={16} />
+                      Remove Image
+                    </button>
+                  </div>
+                ) : (
+                  <div className="image-upload-area">
+                    <button
+                      type="button"
+                      className="upload-btn"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingImage}
+                    >
+                      <Camera size={20} />
+                      {uploadingImage ? 'Uploading...' : 'Upload Cover Image'}
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </div>
+                )}
+                
+                {uploadError && <p className="error-text">{uploadError}</p>}
+              </div>
+
               <div className="form-actions">
                 <button type="button" className="btn btn-outline" onClick={() => setShowForm(false)}>
                   Cancel
@@ -270,8 +516,17 @@ const OpportunityManager = () => {
             <h2>No Opportunities Yet</h2>
             <p>Create your first opportunity to start matching with volunteers!</p>
           </div>
+        ) : filteredOpportunities.length === 0 ? (
+          <div className="empty-state">
+            <Filter size={64} />
+            <h2>No Matching Opportunities</h2>
+            <p>Try adjusting your filters or search query</p>
+            <button className="btn btn-outline" onClick={clearFilters}>
+              Clear Filters
+            </button>
+          </div>
         ) : (
-          opportunities.map(opp => (
+          filteredOpportunities.map(opp => (
             <div key={opp._id} className="opportunity-card">
               <div className="opportunity-header">
                 <div>
